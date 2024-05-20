@@ -5,7 +5,8 @@ import { selectFilter, setFilter } from "../../redux/filtersSlice";
 const SearchBox = () => {
   const dispatch = useDispatch();
   const { filter } = useSelector(selectFilter);
-  console.log(filter);
+  const searchValue = useSelector(selectFilter);
+  console.log(searchValue);
   const handleChange = (event) => {
     dispatch(setFilter(event.target.value.trim().toLowerCase()));
   };

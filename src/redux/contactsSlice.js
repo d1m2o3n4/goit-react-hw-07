@@ -1,31 +1,63 @@
-import { createSlice } from "@reduxjs/toolkit";
+import { createSelector, createSlice } from "@reduxjs/toolkit";
+import {
+  addContactThunk,
+  deleteContactsThunk,
+  fetchContactsThunk,
+} from "./contactsOps";
+import { selectFilter } from "./filtersSlice";
 
 const initialState = {
-  contacts: [
-    { id: "id-1", name: "Rosie Simpson", number: "459-12-56" },
-    { id: "id-2", name: "Hermione Kline", number: "443-89-12" },
-    { id: "id-3", name: "Eden Clements", number: "645-17-79" },
-    { id: "id-4", name: "Annie Copeland", number: "227-91-26" },
-  ],
+  contacts: [],
+  isLoading: false,
+  isError: null,
 };
 
 const contactSlice = createSlice({
   name: "contacts",
   initialState,
-  reducers: {
-    addContact: {
-      reducer(state, { payload }) {
+
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchContactsThunk.fulfilled, (state, { payload }) => {
+        state.contacts = payload;
+      })
+      .addCase(addContactThunk.fulfilled, (state, { payload }) => {
         state.contacts.push(payload);
-      },
-    },
-    deleteContact: {
-      reducer(state, { payload }) {
+      })
+      .addCase(deleteContactsThunk.fulfilled, (state, { payload }) => {
         state.contacts = state.contacts.filter((con) => con.id !== payload);
-      },
-    },
+      })
+      .addMatcher(
+        ({ type }) => type.endsWith("/pending"),
+        (state) => {
+          state.isLoading = true;
+          state.isError = null;
+        }
+      )
+      .addMatcher(
+        ({ type }) => type.endsWith("/fulfilled"),
+        (state) => {
+          state.isLoading = false;
+        }
+      )
+      .addMatcher(
+        ({ type }) => type.endsWith("/rejected"),
+        (state, { error }) => {
+          state.isLoading = false;
+          state.isError = error;
+        }
+      );
   },
 });
-export const selectContacts = (state) => state.contacts;
+export const selectContacts = (state) => state.contacts.contacts;
 
 export const contactsReducer = contactSlice.reducer;
-export const { addContact, deleteContact } = contactSlice.actions;
+
+export const selectFilteredContacts = createSelector(
+  [selectContacts, selectFilter],
+  (contacts, filter) => {
+    return contacts.filter((contact) =>
+      contact.name.toLowerCase().includes(filter)
+    );
+  }
+);
